@@ -42,30 +42,6 @@ get.constituency.results <- function(constituency){
 }
 
 
-
-## Con, Lab, SNP, LibDem, DUP, Sinn Fein, Plaid Cymru, SDLP, UUP,
-## UKIP, Green, Independent
-uk.colors <- data.frame(Party=levels(by.mps$Party),
-                        party.color=c("#1577C7", "#E8251F",
-                            "#EAC135", "#FA8324",
-                            "#BC1D40", "#126140",
-                            "#559D37", "#6AA769",
-                            "#6EB2E4", "#6E3485",  "#999999",
-                            "#7EC031", "#999999"),
-                        stringsAsFactors = FALSE)
-
-not.gb <- c("Democratic Unionist Party", "Sinn Fein", "Social Democratic & Labour Party",
-            "Ulster Unionist Party", "Independent")
-gb.colors <- uk.colors %>% filter(Party %nin% not.gb)
-
-## Look up party colors as needed
-pc.look <- function(parties){
-    x <- match(parties, uk.colors$Party)
-    colors <- uk.colors$party.color[x]
-    return(colors)
-}
-
-
 ###--------------------------------------------------
 ### Get the data
 ###--------------------------------------------------
@@ -171,9 +147,38 @@ smallest.constituencies <- by.mps %>% ungroup() %>%
 safest.seats <- by.mps %>% filter(Vote.Share>63) %>% select(Constituency, Vote.Share, Party) %>%
     data.frame()
 
+by.nc <- data %>% group_by(Constituency) %>%
+    summarize(N.cands=length(Candidate),
+              Ballots=sum(Votes)) %>%
+        ungroup() %>% arrange(desc(N.cands))
+
 ###--------------------------------------------------
 ### Now we can start looking at the data
 ###--------------------------------------------------
+
+
+## Con, Lab, SNP, LibDem, DUP, Sinn Fein, Plaid Cymru, SDLP, UUP,
+## UKIP, Green, Independent
+uk.colors <- data.frame(Party=levels(by.mps$Party),
+                        party.color=c("#1577C7", "#E8251F",
+                            "#EAC135", "#FA8324",
+                            "#BC1D40", "#126140",
+                            "#559D37", "#6AA769",
+                            "#6EB2E4", "#6E3485",  "#999999",
+                            "#7EC031", "#999999"),
+                        stringsAsFactors = FALSE)
+
+not.gb <- c("Democratic Unionist Party", "Sinn Fein", "Social Democratic & Labour Party",
+            "Ulster Unionist Party", "Independent")
+gb.colors <- uk.colors %>% filter(Party %nin% not.gb)
+
+## Look up party colors as needed
+pc.look <- function(parties){
+    x <- match(parties, uk.colors$Party)
+    colors <- uk.colors$party.color[x]
+    return(colors)
+}
+
 
 p <- ggplot(by.mps, aes(x=Total.Votes.Cast, y=Vote.Share, color=Party))
 p +  geom_point() + scale_color_manual(values=uk.colors$party.color)
@@ -189,6 +194,6 @@ p +  geom_point() + scale_color_manual(values=gb.colors$party.color) +
 
 p <- ggplot(safest.seats, aes(x=reorder(as.character(Constituency), Vote.Share, order=TRUE),
                               y=Vote.Share,
-                              fill=Party))
+                              color=Party))
 
-p + geom_bar(stat="identity") + coord_flip() + scale_fill_manual(values=pc.look(c("Conservative", "Labour", "Other"))) + labs(x="", y="Winning Candidate's Vote Share") + ggtitle("Safest Seats") + theme(legend.position="top")
+p + geom_point(size=3) + coord_flip() + scale_color_manual(values=pc.look(c("Conservative", "Labour", "Other"))) + labs(x="", y="Winning Candidate's Vote Share") + ggtitle("Safest Seats") + theme(legend.position="top")

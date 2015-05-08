@@ -11,6 +11,11 @@ library(car)
 
 theme_set(theme_minimal())
 
+## Convenience "not in" function
+"%nin%" <- function(x, y) {
+  return( !(x %in% y) )
+}
+
 get.constituency.results <- function(constituency){
     ## UK Constituency names are unique.
     name <- constituency %>% html_nodes(".constituency-title__title") %>% html_text()

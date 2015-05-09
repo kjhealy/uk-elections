@@ -247,25 +247,36 @@ uk.map.df <- merge(uk.map.df, constituencies.map, by="id")
 ## Now we have a map of all the constituencys and winners
 uk.map.df <- merge(uk.map.df, by.mps, by="Constituency")
 
+
+### Make the mapes
 p <- ggplot()
 p <- p + geom_map(data=uk.map.df, map=uk.map.df,
-                    aes(map_id=id, x=long, y=lat, group=group, fill=Party),
-                    color="white", size=0.25)
+                    aes(map_id=id, x=long, y=lat, group=group, fill=Party))
 
-p <- p + scale_fill_manual(values=gb.colors$party.color)
+## We do this twice so we can get a legend without a slashed line for
+## the color mapping that draws the white borders
+p1 <- p + geom_map(data=uk.map.df, map=uk.map.df,
+                    aes(map_id=id, x=long, y=lat, group=group, fill=Party),
+                    color="white", size=0.25, show_guide=FALSE)
+
+
+p2 <- p1 + scale_fill_manual(values=gb.colors$party.color)
 
 pdf(file="figures/uk-2015-winners.pdf", height=15, width=10)
-p0 <- p + coord_map() + labs(x="", y="") + theme(panel.grid=element_blank(),
-                                           axis.ticks=element_blank(),
-                                           panel.border=element_blank(),
-                                           axis.text=element_blank(),
-                                                 legend.position="right")
-print(p0)
+
+p3 <- p2 + coord_map() + labs(x=NULL, y=NULL, fill="") +
+    theme(panel.grid=element_blank(),
+          axis.ticks=element_blank(),
+          panel.border=element_blank(),
+          axis.text=element_blank(),
+          legend.position=c(0.8, 0.55))
+
+print(p3)
 credit()
 dev.off()
 
 ggsave("figures/uk-2015-winners.png",
-       p0,
+       p3,
        height=15,
        width=10,
        dpi=300)
@@ -287,24 +298,31 @@ runner.up.df <- merge(runner.up.df, constituencies.map, by="id")
 runner.up.df <- merge(runner.up.df, by.runner.up, by="Constituency")
 
 p <- ggplot()
-p <- p + geom_map(data=runner.up.df, map=runner.up.df,
-                    aes(map_id=id, x=long, y=lat, group=group, fill=Party),
-                    color="white", size=0.25)
 
-p <- p + scale_fill_manual(values=runner.up.colors$party.color)
+p <- p + geom_map(data=runner.up.df, map=runner.up.df,
+                    aes(map_id=id, x=long, y=lat, group=group, fill=Party))
+
+p1 <- p + geom_map(data=runner.up.df, map=runner.up.df,
+                    aes(map_id=id, x=long, y=lat, group=group, fill=Party),
+                    color="white", size=0.25, show_guide=FALSE)
+
+p2 <- p1 + scale_fill_manual(values=runner.up.colors$party.color)
 
 pdf(file="figures/uk-2015-runners-up.pdf", height=15, width=10)
-p0 <- p + coord_map() + labs(x="", y="") + theme(panel.grid=element_blank(),
-                                           axis.ticks=element_blank(),
-                                           panel.border=element_blank(),
-                                           axis.text=element_blank(),
-                                                 legend.position="right") + ggtitle("Who came Second?\nElection Constituencies by Runner-Up Candidate")
-print(p0)
+p3 <- p2 + coord_map() + labs(x=NULL, y=NULL, fill="") +
+    theme(panel.grid=element_blank(),
+          axis.ticks=element_blank(),
+          panel.border=element_blank(),
+          axis.text=element_blank(),
+          legend.position=c(0.8, 0.55)) +
+        ggtitle("Who came Second?\nElection Constituencies by Runner-Up Candidate")
+
+print(p3)
 credit()
 dev.off()
 
 ggsave("figures/uk-2015-runners-up.png",
-       p0,
+       p3,
        height=15,
        width=10,
        dpi=300)

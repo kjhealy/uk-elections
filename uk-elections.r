@@ -129,10 +129,16 @@ data$Party <- as.character(data$Party)
 data$Party[ind] <- "Other"
 data$Party <- factor(data$Party, levels=unique(data$Party))
 
+## Code the Speaker of the House as Conservative
+data %>% filter(Constituency == "Buckingham")
+data$Party[data$Candidate == "John Bercow"] <- "Conservative"
+
 all.parties <- data %>% group_by(Party.all) %>% tally() %>% arrange(desc(n)) %>% data.frame()
 
 by.mps <- data %>% group_by(Constituency) %>% filter(Votes==max(Votes))  %>%
     ungroup() %>% arrange(desc(Vote.Share))  %>% data.frame(.)
+
+by.party <- by.mps %>% group_by(Party) %>% summarize(Seats=n()) %>% arrange(desc(Seats))
 
 ## In Seat order
 by.seats <- by.mps %>% group_by(Party) %>% tally() %>% arrange(desc(n)) %>%
@@ -178,7 +184,7 @@ uk.colors <- data.frame(Party=levels(by.mps$Party),
                             "#BC1D40", "#126140",
                             "#559D37", "#6AA769",
                             "#6EB2E4", "#6E3485",  "#999999",
-                            "#7EC031", "#999999"),
+                            "#7EC031"),
                         stringsAsFactors = FALSE)
 
 not.gb <- c("Democratic Unionist Party", "Sinn Fein", "Social Democratic & Labour Party",

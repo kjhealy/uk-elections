@@ -248,7 +248,7 @@ uk.map.df <- merge(uk.map.df, constituencies.map, by="id")
 uk.map.df <- merge(uk.map.df, by.mps, by="Constituency")
 
 
-### Make the mapes
+### Make the maps
 p <- ggplot()
 p <- p + geom_map(data=uk.map.df, map=uk.map.df,
                     aes(map_id=id, x=long, y=lat, group=group, fill=Party))
@@ -264,7 +264,7 @@ p2 <- p1 + scale_fill_manual(values=gb.colors$party.color)
 
 pdf(file="figures/uk-2015-winners.pdf", height=15, width=10)
 
-p3 <- p2 + coord_map() + labs(x=NULL, y=NULL, fill="") +
+p3 <- p2 + coord_map(projection="albers", at0 = 51, lat1 = 0) + labs(x=NULL, y=NULL, fill="") +
     theme(panel.grid=element_blank(),
           axis.ticks=element_blank(),
           panel.border=element_blank(),
@@ -309,7 +309,7 @@ p1 <- p + geom_map(data=runner.up.df, map=runner.up.df,
 p2 <- p1 + scale_fill_manual(values=runner.up.colors$party.color)
 
 pdf(file="figures/uk-2015-runners-up.pdf", height=15, width=10)
-p3 <- p2 + coord_map() + labs(x=NULL, y=NULL, fill="") +
+p3 <- p2 + coord_map(projection="albers", at0 = 51, lat1 = 0) + labs(x=NULL, y=NULL, fill="") +
     theme(panel.grid=element_blank(),
           axis.ticks=element_blank(),
           panel.border=element_blank(),

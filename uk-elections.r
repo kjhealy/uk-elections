@@ -68,8 +68,10 @@ if(!file.exists("data/constituency_names.csv")){
     constituency_urls <- constituencies %>% html_nodes("a") %>% html_attrs() %>%
         paste("http://bbc.com", ., sep="")
 
-    write.csv(constituency_urls, file="data/constituency_urls.csv")
-
+    ## The BBC URL is also the topoJSON identifier; useful later
+    constituency_ids <- str_replace(constituency_urls,
+                                     "http://bbc.com/news/politics/constituencies/",
+                                     "")
     constituency_names <- lapply(constituency_names, html_table)
     library(data.table)
     constituency_names.df <- data.frame(rbindlist(constituency_names))
@@ -77,6 +79,8 @@ if(!file.exists("data/constituency_names.csv")){
 
     colnames(constituency_names.df) <- c("Constituency", "Nation")
     constituency_names.df$URL <- constituency_urls
+    constituency_names.df$id <- constituency_ids
+
     write.csv(constituency_names.df, file="data/constituency_names.csv")
 }
 
@@ -224,14 +228,8 @@ p + geom_point(size=3) + coord_flip() + scale_color_manual(values=pc.look(c("Con
 uk.map <- readOGR("maps/topo_wpc.json", "wpc")
 
 ## The name field didn't get imported properly for some reason.
-## However, the BBC url is the constituency id
-constituency_names <- read.csv("data/constituency_names.csv", row.names = 1)
-constituency_names$id <- str_replace(constituency_names$URL,
-                                     "http://bbc.com/news/politics/constituencies/",
-                                     "")
-
-ind <- match(uk.map@data$id, constituency_names$id)
-uk.map@data$name <- constituency_names$Constituency[ind]
+ind <- match(uk.map@data$id, constituency_names.df$id)
+uk.map@data$name <- constituency_names.df$Constituency[ind]
 
 constituencies.map <- data.frame(id=0:(length(uk.map@data$name)-1),
                        Constituency=as.character(uk.map@data$name))
@@ -256,6 +254,7 @@ p0 <- p + coord_map() + labs(x="", y="") + theme(panel.grid=element_blank(),
                                            panel.border=element_blank(),
                                            axis.text=element_blank(),
                                                  legend.position="right")
+print(p0)
 credit()
 dev.off()
 

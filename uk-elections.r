@@ -106,17 +106,6 @@ data <- rbind_all(all.results.list)
 ind <- match(data$Constituency, constituency_names.df$Constituency)
 data$Region <- constituency_names.df$Nation[ind]
 
-write.csv(data, "data/uk-election-results-2015.csv")
-
-} else{
-
-data <- read.csv("data/uk-election-results-2015.csv", row.names=1)
-
-}
-
-data <- data %>% group_by(Constituency) %>% mutate(Total.Votes.Cast=sum(Votes),
-                                                   Rank=row_number(desc(Votes))) %>% data.frame()
-
 ### Recode Party
 ### parties by N candidates
 main.parties <- data %>% group_by(Party) %>% tally() %>% arrange(desc(n)) %>%
@@ -128,6 +117,17 @@ data$Party.all <- data$Party
 data$Party <- as.character(data$Party)
 data$Party[ind] <- "Other"
 data$Party <- factor(data$Party, levels=unique(data$Party))
+
+write.csv(data, "data/uk-election-results-2015.csv")
+
+} else{
+
+data <- read.csv("data/uk-election-results-2015.csv", row.names=1)
+
+}
+
+data <- data %>% group_by(Constituency) %>% mutate(Total.Votes.Cast=sum(Votes),
+                                                   Rank=row_number(desc(Votes))) %>% data.frame()
 
 ## Code the Speaker of the House as Conservative
 data %>% filter(Constituency == "Buckingham")
@@ -141,10 +141,12 @@ by.mps <- data %>% group_by(Constituency) %>% filter(Votes==max(Votes))  %>%
 by.party <- by.mps %>% group_by(Party) %>% summarize(Seats=n()) %>% arrange(desc(Seats))
 
 ## In Seat order
-by.seats <- by.mps %>% group_by(Party) %>% tally() %>% arrange(desc(n)) %>%
+by.seats <- data %>% group_by(Constituency) %>% filter(Votes==max(Votes)) %>%
+    group_by(Party) %>% tally() %>% arrange(desc(n)) %>%
     data.frame(.)
 
 library(gdata)
+data$Party <- as.factor(data$Party)
 data$Party <- reorder.factor(data$Party, new.order=by.seats$Party)
 by.mps$Party <- reorder.factor(by.mps$Party, new.order=by.seats$Party)
 detach(package:gdata)
@@ -175,17 +177,32 @@ by.nc <- data %>% group_by(Constituency) %>%
 ### Now we can start looking at the data
 ###--------------------------------------------------
 
+## Convenience function to check color labels
+pal <- function(col, border = "light gray")
+{
+  n <- length(col)
+  plot(0, 0, type="n", xlim = c(0, 1), ylim = c(0, 1), axes=FALSE, xlab = "", ylab = "")
+  rect(0:(n-1)/n, 0, 1:n/n, 1, col = col, border = border)
+}
 
-## Con, Lab, SNP, LibDem, DUP, Sinn Fein, Plaid Cymru, SDLP, UUP,
-## UKIP, Green, Independent
 uk.colors <- data.frame(Party=levels(by.mps$Party),
-                        party.color=c("#1577C7", "#E8251F",
-                            "#EAC135", "#FA8324",
-                            "#BC1D40", "#126140",
-                            "#559D37", "#6AA769",
-                            "#6EB2E4", "#6E3485",  "#999999",
-                            "#7EC031"),
+                        party.color=c(
+                            "#1577C7", # Conservative
+                            "#E8251F", # Labour
+                            "#EAC135", # SNP
+                            "#BC1D40", # DUP
+                            "#FA8324", # Lim-Dems
+                            "#126140", # Sinn Fein
+                            "#559D37", # Plaid Cymru
+                            "#6AA769", # SDLP
+                            "#6EB2E4", # UUP
+                            "#7EC031", # Greens
+                            "#999999", # Independent
+                            "#6E3485" # UKIP
+                            ),
                         stringsAsFactors = FALSE)
+
+pal(uk.colors$party.color)
 
 not.gb <- c("Democratic Unionist Party", "Sinn Fein", "Social Democratic & Labour Party",
             "Ulster Unionist Party", "Independent")
@@ -247,36 +264,47 @@ uk.map.df <- merge(uk.map.df, constituencies.map, by="id")
 ## Now we have a map of all the constituencys and winners
 uk.map.df <- merge(uk.map.df, by.mps, by="Constituency")
 
+library(gdata)
+uk.map.df$Party <- factor(uk.map.df$Party, levels=gb.colors$Party, ordered=TRUE)
+uk.map.df$Party <- droplevels(uk.map.df$Party)
+uk.map.df$Party <- reorder.factor(uk.map.df$Party,
+                                  new.order=as.character(by.seats$Party), order=TRUE)
+detach(package:gdata)
+
+
 
 ### Make the maps
-p <- ggplot()
-p <- p + geom_map(data=uk.map.df, map=uk.map.df,
-                    aes(map_id=id, x=long, y=lat, group=group, fill=Party))
+p <- ggplot(data=uk.map.df,
+            aes(x=long, y=lat,
+                group=group))
 
-## We do this twice so we can get a legend without a slashed line for
-## the color mapping that draws the white borders
-p1 <- p + geom_map(data=uk.map.df, map=uk.map.df,
+p1 <- p + geom_map(data = uk.map.df,
+                   map = uk.map.df,
+                   aes(map_id=id, x=long, y=lat, group=group, fill=Party),
+                   color="white", size=0.2)
+
+p2 <- p1 + geom_map(data=subset(uk.map.df, Constituency=="York Central"),
+                    map=subset(uk.map.df, Constituency=="York Central"),
                     aes(map_id=id, x=long, y=lat, group=group, fill=Party),
-                    color="white", size=0.25, show_guide=FALSE)
+                    color="white", size=0.2)
 
-
-p2 <- p1 + scale_fill_manual(values=gb.colors$party.color)
+p3 <- p2 + scale_fill_manual(values=gb.colors$party.color)
 
 pdf(file="figures/uk-2015-winners.pdf", height=15, width=10)
 
-p3 <- p2 + coord_map(projection="albers", at0 = 51, lat1 = 0) + labs(x=NULL, y=NULL, fill="") +
+p4 <- p3 + coord_map(projection="albers", at0 = 51, lat1 = 0) + labs(x=NULL, y=NULL, fill="") +
     theme(panel.grid=element_blank(),
           axis.ticks=element_blank(),
           panel.border=element_blank(),
           axis.text=element_blank(),
           legend.position=c(0.8, 0.55))
 
-print(p3)
+print(p4)
 credit()
 dev.off()
 
 ggsave("figures/uk-2015-winners.png",
-       p3,
+       p4,
        height=15,
        width=10,
        dpi=300)
@@ -297,32 +325,39 @@ runner.up.df <- merge(runner.up.df, constituencies.map, by="id")
 ## Now we have a map of all the constituencys and winners
 runner.up.df <- merge(runner.up.df, by.runner.up, by="Constituency")
 
-p <- ggplot()
 
-p <- p + geom_map(data=runner.up.df, map=runner.up.df,
-                    aes(map_id=id, x=long, y=lat, group=group, fill=Party))
+p <- ggplot(data=runner.up.df,
+            aes(x=long, y=lat,
+                group=group))
 
-p1 <- p + geom_map(data=runner.up.df, map=runner.up.df,
+p1 <- p + geom_map(data = runner.up.df,
+                   map = runner.up.df,
+                   aes(map_id=id, x=long, y=lat, group=group, fill=Party),
+                   color="white", size=0.2)
+
+p2 <- p1 + geom_map(data=subset(runner.up.df, Constituency=="York Central"),
+                    map=subset(runner.up.df, Constituency=="York Central"),
                     aes(map_id=id, x=long, y=lat, group=group, fill=Party),
-                    color="white", size=0.25, show_guide=FALSE)
+                    color="white", size=0.2)
 
-p2 <- p1 + scale_fill_manual(values=runner.up.colors$party.color)
+p3 <- p2 + scale_fill_manual(values=runner.up.colors$party.color)
 
 pdf(file="figures/uk-2015-runners-up.pdf", height=15, width=10)
-p3 <- p2 + coord_map(projection="albers", at0 = 51, lat1 = 0) + labs(x=NULL, y=NULL, fill="") +
+
+p4 <- p3 + coord_map(projection="albers", at0 = 51, lat1 = 0) + labs(x=NULL, y=NULL, fill="") +
     theme(panel.grid=element_blank(),
           axis.ticks=element_blank(),
           panel.border=element_blank(),
           axis.text=element_blank(),
           legend.position=c(0.8, 0.55)) +
-        ggtitle("Who came Second?\nElection Constituencies by Runner-Up Candidate")
+        ggtitle("Who Came Second? Election Constituencies by Runner-Up Candidate")
 
-print(p3)
+print(p4)
 credit()
 dev.off()
 
 ggsave("figures/uk-2015-runners-up.png",
-       p3,
+       p4,
        height=15,
        width=10,
        dpi=300)

@@ -96,7 +96,7 @@ for(i in 1:nrow(constituency_names.df)){
     fname <- paste("data/", name, ".rda", sep="")
     save(constituency, file=fname)
 
-    all.results.list[[name]] <- get.consituency.results(constituency)
+    all.results.list[[name]] <- get.constituency.results(constituency)
     message(paste("Completed", name))
     Sys.sleep(1.5) ## Try to be polite
 

@@ -20,6 +20,9 @@ theme_set(theme_minimal())
   return( !(x %in% y) )
 }
 
+## Make a "figures" subdirectory if one doesn't exist
+ifelse(!dir.exists(file.path("figures")), dir.create(file.path("figures")), FALSE)
+
 get.constituency.results <- function(constituency){
     ## UK Constituency names are unique.
     name <- constituency %>% html_nodes(".constituency-title__title") %>% html_text()

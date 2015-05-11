@@ -82,6 +82,8 @@ if(!file.exists("data/constituency_names.csv")){
     constituency_names.df$id <- constituency_ids
 
     write.csv(constituency_names.df, file="data/constituency_names.csv")
+} else {
+    constituency_names.df <- read.csv("data/constituency_names.csv", header=TRUE, row.names=1)
 }
 
 

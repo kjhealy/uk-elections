@@ -20,6 +20,9 @@ theme_set(theme_minimal())
   return( !(x %in% y) )
 }
 
+## credit() and makeFootnote() functions can be found here:
+## https://github.com/kjhealy/kjhutils/blob/master/R/utility.R
+
 ## Make a "figures" subdirectory if one doesn't exist
 ifelse(!dir.exists(file.path("figures")), dir.create(file.path("figures")), FALSE)
 
